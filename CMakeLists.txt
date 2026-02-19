@@ -14,6 +14,7 @@ add_compile_options(-msse4.2)
 add_library(simd_img
     src/image.cpp
     src/filters_scalar.cpp
+    src/filters_sse.cpp
 )
 
 target_include_directories(simd_img PUBLIC include)

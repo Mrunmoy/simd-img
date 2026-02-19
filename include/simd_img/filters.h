@@ -11,4 +11,8 @@ namespace scalar {
 void brightness(Image& img, int value);
 }  // namespace scalar
 
+namespace sse {
+void brightness(Image& img, int value);
+}  // namespace sse
+
 }  // namespace simd_img

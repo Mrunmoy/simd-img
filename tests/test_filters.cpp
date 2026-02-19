@@ -2,6 +2,7 @@
 #include "simd_img/filters.h"
 
 #include <gtest/gtest.h>
+#include <cmath>
 #include <cstring>
 
 namespace {
@@ -21,6 +22,24 @@ simd_img::Image makeGradient(uint32_t w, uint32_t h)
         }
     }
     return img;
+}
+
+bool imagesMatch(const simd_img::Image& a, const simd_img::Image& b, int tol = 1)
+{
+    if (a.width() != b.width() || a.height() != b.height())
+        return false;
+
+    for (uint32_t y = 0; y < a.height(); ++y)
+    {
+        const uint8_t* ra = a.row(y);
+        const uint8_t* rb = b.row(y);
+        for (uint32_t x = 0; x < a.width() * 4; ++x)
+        {
+            if (std::abs(static_cast<int>(ra[x]) - static_cast<int>(rb[x])) > tol)
+                return false;
+        }
+    }
+    return true;
 }
 
 }  // namespace
@@ -81,10 +100,42 @@ TEST(Image, PpmRoundtrip)
 
 // --- Brightness ---
 
+TEST(Brightness, PositiveMatchesScalarAndSse)
+{
+    // 130px wide -- not a multiple of 4, exercises the scalar tail
+    auto ref = makeGradient(130, 80);
+    auto sse = ref.clone();
+
+    simd_img::scalar::brightness(ref, 40);
+    simd_img::sse::brightness(sse, 40);
+    EXPECT_TRUE(imagesMatch(ref, sse));
+}
+
+TEST(Brightness, NegativeMatchesScalarAndSse)
+{
+    auto ref = makeGradient(130, 80);
+    auto sse = ref.clone();
+
+    simd_img::scalar::brightness(ref, -60);
+    simd_img::sse::brightness(sse, -60);
+    EXPECT_TRUE(imagesMatch(ref, sse));
+}
+
 TEST(Brightness, SaturationClampsTo255)
 {
     simd_img::Image img(16, 16);
     img.fill(250, 250, 250, 255);
     simd_img::scalar::brightness(img, 30);
     EXPECT_EQ(img.row(0)[0], 255);
+}
+
+TEST(Brightness, SaturationMatchesBetweenScalarAndSse)
+{
+    simd_img::Image scalarImg(16, 16);
+    scalarImg.fill(250, 250, 250, 255);
+    auto sseImg = scalarImg.clone();
+
+    simd_img::scalar::brightness(scalarImg, 30);
+    simd_img::sse::brightness(sseImg, 30);
+    EXPECT_TRUE(imagesMatch(scalarImg, sseImg));
 }
