@@ -1,4 +1,5 @@
 #include "simd_img/image.h"
+#include "simd_img/filters.h"
 
 #include <gtest/gtest.h>
 #include <cstring>
@@ -76,4 +77,14 @@ TEST(Image, PpmRoundtrip)
                 EXPECT_EQ(a[x * 4 + c], b[x * 4 + c]);
         }
     }
+}
+
+// --- Brightness ---
+
+TEST(Brightness, SaturationClampsTo255)
+{
+    simd_img::Image img(16, 16);
+    img.fill(250, 250, 250, 255);
+    simd_img::scalar::brightness(img, 30);
+    EXPECT_EQ(img.row(0)[0], 255);
 }
